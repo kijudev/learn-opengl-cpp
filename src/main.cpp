@@ -1,5 +1,7 @@
-#include <GLFW/glfw3.h>
+// clang-format off
 #include <epoxy/gl.h>
+#include <GLFW/glfw3.h>
+// clang-format on
 
 #include <cstdlib>
 #include <print>
