@@ -10,10 +10,17 @@
 
 const char* triangle_vertex_shader_source =
     "#version 330 core\n"
-    "layout (location = 0) in vec3 aPos;\n"
+    "layout (location = 0) in vec3 pos;\n"
     "void main()\n"
     "{\n"
-    "    gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+    "    gl_Position = vec4(pos.x, pos.y, pos.z, 1.0);\n"
+    "}\n";
+
+const char* triangle_fragment_shader_source =
+    "#version 330 core\n"
+    "out vec4 color;\n"
+    "void main() {\n"
+    "    color = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
     "}\n";
 
 void error_callback(int error, const char* description) {
@@ -70,6 +77,31 @@ int main() {
         glGetShaderInfoLog(triangle_vertex_shader, 512, nullptr, shader_info_log);
         std::println("ERROR::SHADER::VERTEX::COMPILATION_FAILED -> {}", shader_info_log);
     }
+
+    uint32_t triangle_fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(triangle_fragment_shader, 1, &triangle_fragment_shader_source, nullptr);
+    glCompileShader(triangle_fragment_shader);
+
+    glGetShaderiv(triangle_fragment_shader, GL_COMPILE_STATUS, &shader_success);
+    if (!shader_success) {
+        glGetShaderInfoLog(triangle_fragment_shader, 512, nullptr, shader_info_log);
+        std::println("ERROR::SHADER::FRAGMENT::COMPILATION_FAILED -> {}", shader_info_log);
+    }
+
+    uint32_t triangle_shader_program = glCreateProgram();
+    glAttachShader(triangle_shader_program, triangle_vertex_shader);
+    glAttachShader(triangle_shader_program, triangle_fragment_shader);
+    glLinkProgram(triangle_shader_program);
+
+    glGetProgramiv(triangle_shader_program, GL_LINK_STATUS, &shader_success);
+    if (!shader_success) {
+        glGetProgramInfoLog(triangle_shader_program, 512, nullptr, shader_info_log);
+        std::println("ERROR::SHADER::PROGRAM::LINKING_FAILED -> {}", shader_info_log);
+    }
+
+    glUseProgram(triangle_shader_program);
+    glDeleteShader(triangle_vertex_shader);
+    glDeleteShader(triangle_fragment_shader);
 
     while (!glfwWindowShouldClose(window)) {
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
