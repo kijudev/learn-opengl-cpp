@@ -1,8 +1,8 @@
-#include <epoxy/gl.h>
 #include <GLFW/glfw3.h>
+#include <epoxy/gl.h>
 
-#include <print>
 #include <cstdlib>
+#include <print>
 
 void error_callback(int error, const char* description) {
     std::println(stderr, "GLFW Error ({}): {}", error, description);
@@ -23,7 +23,8 @@ int main() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow* window = glfwCreateWindow(800, 600, "LearnOpenGL - C++23 & Epoxy", nullptr, nullptr);
+    GLFWwindow* window =
+        glfwCreateWindow(800, 600, "LearnOpenGL - C++23 & Epoxy", nullptr, nullptr);
     if (!window) {
         std::println(stderr, "Failed to create GLFW window");
         glfwTerminate();
@@ -34,7 +35,8 @@ int main() {
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
     const auto* glVersion = reinterpret_cast<const char*>(glGetString(GL_VERSION));
-    std::println("Successfully loaded OpenGL Version: {}", glVersion ? glVersion : "Unknown");
+    std::println("Successfully loaded OpenGL Version: {}",
+                 glVersion ? glVersion : "Unknown");
 
     while (!glfwWindowShouldClose(window)) {
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
@@ -48,7 +50,6 @@ int main() {
         glfwPollEvents();
     }
 
-    // 5. Cleanup
     glfwTerminate();
     return EXIT_SUCCESS;
 }
