@@ -23,11 +23,11 @@ const char* triangle_fragment_shader_source =
     "    color = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
     "}\n";
 
-void error_callback(int error, const char* description) {
+void error_callback(int32_t error, const char* description) {
     std::println(stderr, "GLFW Error ({}): {}", error, description);
 }
 
-void framebuffer_size_callback(GLFWwindow*, int width, int height) {
+void framebuffer_size_callback(GLFWwindow*, int32_t width, int32_t height) {
     glViewport(0, 0, width, height);
 }
 
@@ -57,13 +57,6 @@ int main() {
     const char* glVersion = reinterpret_cast<const char*>(glGetString(GL_VERSION));
     std::println("Successfully loaded OpenGL Version: {}",
                  glVersion ? glVersion : "Unknown");
-
-    float vertices[] { -0.5f, 0.5f, 0.0f, 0.5f, -0.5f, 0.0f, 0.5f, 0.5f, 0.0f };
-
-    uint32_t vbo;
-    glGenBuffers(1, &vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
     uint32_t triangle_vertex_shader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(triangle_vertex_shader, 1, &triangle_vertex_shader_source, nullptr);
@@ -99,9 +92,35 @@ int main() {
         std::println("ERROR::SHADER::PROGRAM::LINKING_FAILED -> {}", shader_info_log);
     }
 
-    glUseProgram(triangle_shader_program);
     glDeleteShader(triangle_vertex_shader);
     glDeleteShader(triangle_fragment_shader);
+
+    float vertices[] {
+        -0.5f,  0.5f, 0.0f,
+         0.5f,  0.5f, 0.0f,
+         0.5f, -0.5f, 0.0f,
+        -0.5f, -0.5f, 0.0f,
+    };
+
+    uint32_t indices[] = { 0, 1, 2, 0, 2, 3 };
+
+    uint32_t vbo;
+    uint32_t vao;
+    uint32_t ebo;
+
+    glGenBuffers(1, &vbo);
+    glGenVertexArrays(1, &vao);
+    glGenBuffers(1, &ebo);
+
+    glBindVertexArray(vao);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float),
+                          static_cast<void*>(0));
+    glEnableVertexAttribArray(0);
 
     while (!glfwWindowShouldClose(window)) {
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
@@ -111,10 +130,20 @@ int main() {
         glClearColor(0.15f, 0.18f, 0.22f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
+        glUseProgram(triangle_shader_program);
+        glBindVertexArray(vao);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, static_cast<void*>(0));
+
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
+    glDeleteVertexArrays(1, &vao);
+    glDeleteBuffers(1, &vbo);
+    glDeleteBuffers(1, &ebo);
+    glDeleteProgram(triangle_shader_program);
+
     glfwTerminate();
+
     return EXIT_SUCCESS;
 }
