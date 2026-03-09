@@ -4,6 +4,7 @@
 #include <epoxy/gl_generated.h>
 // clang-format on
 
+#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <print>
@@ -84,8 +85,16 @@ int main() {
 
         glClearColor(0.15f, 0.18f, 0.22f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
-
         glUseProgram(program->get());
+
+        float time                   = static_cast<float>(glfwGetTime());
+        float rainbow_color_green    = std::sin(time / 17.0f) / 2.0f + 0.5f;
+        float rainbow_color_red      = std::sin(time / 7.0f) / 2.0f + 0.5f;
+        float rainbow_color_blue     = std::sin(time / 13.0f) / 2.0f + 0.5f;
+        GLint rainbow_color_location = glGetUniformLocation(program->get(), "RainbowColor");
+        glUniform4f(rainbow_color_location, rainbow_color_green, rainbow_color_red,
+                    rainbow_color_blue, 1.0f);
+
         glBindVertexArray(vao);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, static_cast<void*>(0));
 
