@@ -39,6 +39,7 @@
               pkgs.libxcb
               pkgs.libxau
               pkgs.libxdmcp
+              pkgs.stb
             ];
 
             LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath ([
