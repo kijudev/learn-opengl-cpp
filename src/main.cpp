@@ -8,20 +8,7 @@
 #include <cstdlib>
 #include <print>
 
-const char* triangle_vertex_shader_source =
-    "#version 330 core\n"
-    "layout (location = 0) in vec3 pos;\n"
-    "void main()\n"
-    "{\n"
-    "    gl_Position = vec4(pos.x, pos.y, pos.z, 1.0);\n"
-    "}\n";
-
-const char* triangle_fragment_shader_source =
-    "#version 330 core\n"
-    "out vec4 color;\n"
-    "void main() {\n"
-    "    color = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-    "}\n";
+#include "shader.hpp"
 
 void error_callback(int32_t error, const char* description) {
     std::println(stderr, "GLFW Error ({}): {}", error, description);
@@ -58,48 +45,16 @@ int main() {
     std::println("Successfully loaded OpenGL Version: {}",
                  glVersion ? glVersion : "Unknown");
 
-    uint32_t triangle_vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(triangle_vertex_shader, 1, &triangle_vertex_shader_source, nullptr);
-    glCompileShader(triangle_vertex_shader);
-
-    int32_t shader_success;
-    char shader_info_log[512];
-    glGetShaderiv(triangle_vertex_shader, GL_COMPILE_STATUS, &shader_success);
-
-    if (!shader_success) {
-        glGetShaderInfoLog(triangle_vertex_shader, 512, nullptr, shader_info_log);
-        std::println("ERROR::SHADER::VERTEX::COMPILATION_FAILED -> {}", shader_info_log);
+    auto program = shader::load_program("shaders/triangle.vert", "shaders/triangle.frag");
+    if (!program) {
+        const shader::Error error = program.error();
+        std::println(stderr, "Shader error: {}; {}", error.message, error.log);
+        glfwTerminate();
+        return EXIT_FAILURE;
     }
-
-    uint32_t triangle_fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(triangle_fragment_shader, 1, &triangle_fragment_shader_source, nullptr);
-    glCompileShader(triangle_fragment_shader);
-
-    glGetShaderiv(triangle_fragment_shader, GL_COMPILE_STATUS, &shader_success);
-    if (!shader_success) {
-        glGetShaderInfoLog(triangle_fragment_shader, 512, nullptr, shader_info_log);
-        std::println("ERROR::SHADER::FRAGMENT::COMPILATION_FAILED -> {}", shader_info_log);
-    }
-
-    uint32_t triangle_shader_program = glCreateProgram();
-    glAttachShader(triangle_shader_program, triangle_vertex_shader);
-    glAttachShader(triangle_shader_program, triangle_fragment_shader);
-    glLinkProgram(triangle_shader_program);
-
-    glGetProgramiv(triangle_shader_program, GL_LINK_STATUS, &shader_success);
-    if (!shader_success) {
-        glGetProgramInfoLog(triangle_shader_program, 512, nullptr, shader_info_log);
-        std::println("ERROR::SHADER::PROGRAM::LINKING_FAILED -> {}", shader_info_log);
-    }
-
-    glDeleteShader(triangle_vertex_shader);
-    glDeleteShader(triangle_fragment_shader);
 
     float vertices[] {
-        -0.5f,  0.5f, 0.0f,
-         0.5f,  0.5f, 0.0f,
-         0.5f, -0.5f, 0.0f,
-        -0.5f, -0.5f, 0.0f,
+        -0.5f, 0.5f, 0.0f, 0.5f, 0.5f, 0.0f, 0.5f, -0.5f, 0.0f, -0.5f, -0.5f, 0.0f,
     };
 
     uint32_t indices[] = { 0, 1, 2, 0, 2, 3 };
@@ -130,7 +85,7 @@ int main() {
         glClearColor(0.15f, 0.18f, 0.22f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glUseProgram(triangle_shader_program);
+        glUseProgram(program->get());
         glBindVertexArray(vao);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, static_cast<void*>(0));
 
@@ -141,7 +96,7 @@ int main() {
     glDeleteVertexArrays(1, &vao);
     glDeleteBuffers(1, &vbo);
     glDeleteBuffers(1, &ebo);
-    glDeleteProgram(triangle_shader_program);
+    program->reset();
 
     glfwTerminate();
 

@@ -18,17 +18,24 @@ pkg_check_modules(EPOXY REQUIRED epoxy)
 find_package(glfw3 REQUIRED)
 find_package(glm REQUIRED)
 
-
-add_executable(${PROJECT_NAME} src/main.cpp)
+add_executable(${PROJECT_NAME} src/main.cpp src/shader.cpp)
+target_sources(${PROJECT_NAME} PRIVATE src/shader.hpp)
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${EPOXY_INCLUDE_DIRS})
 target_include_directories(${PROJECT_NAME} PRIVATE src)
 
-target_link_libraries(LearnOpenGL 
-    PRIVATE 
+target_link_libraries(LearnOpenGL
+    PRIVATE
     ${EPOXY_LIBRARIES}
-    glfw 
+    glfw
     glm::glm
+)
+
+# Shader asset copy
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_SOURCE_DIR}/shaders
+    $<TARGET_FILE_DIR:${PROJECT_NAME}>/shaders
 )
 
 # Disable C++ module scanning to prevent clang-scan-deps from failing in Nix
@@ -70,11 +77,11 @@ option(ENABLE_TSAN  "Enable ThreadSanitizer"            OFF)
 # ==========================================================================================
 
 if(ENABLE_ASAN AND ENABLE_MSAN)
-  message(FATAL_ERROR "ASan and MSan are mutually exclusive.")
+    message(FATAL_ERROR "ASan and MSan are mutually exclusive.")
 endif()
 
 if(ENABLE_TSAN AND (ENABLE_ASAN OR ENABLE_MSAN))
-  message(FATAL_ERROR "TSan is mutually exclusive with ASan and MSan.")
+    message(FATAL_ERROR "TSan is mutually exclusive with ASan and MSan.")
 endif()
 
 # ==========================================================================================
@@ -82,42 +89,40 @@ endif()
 # ==========================================================================================
 
 if(ENABLE_ASAN)
-  message(STATUS "AddressSanitizer enabled")
-  target_compile_options(${PROJECT_NAME} PRIVATE
+    message(STATUS "AddressSanitizer enabled")
+    target_compile_options(${PROJECT_NAME} PRIVATE
     -fsanitize=address
     -fno-omit-frame-pointer
     -fno-optimize-sibling-calls
   )
-  target_link_options(${PROJECT_NAME} PRIVATE -fsanitize=address)
+    target_link_options(${PROJECT_NAME} PRIVATE -fsanitize=address)
 endif()
 
 if(ENABLE_UBSAN)
-  message(STATUS "UndefinedBehaviorSanitizer enabled")
-  target_compile_options(${PROJECT_NAME} PRIVATE
+    message(STATUS "UndefinedBehaviorSanitizer enabled")
+    target_compile_options(${PROJECT_NAME} PRIVATE
     -fsanitize=undefined
     -fno-omit-frame-pointer
   )
-  target_link_options(${PROJECT_NAME} PRIVATE -fsanitize=undefined)
+    target_link_options(${PROJECT_NAME} PRIVATE -fsanitize=undefined)
 endif()
 
 if(ENABLE_MSAN)
-  message(STATUS "MemorySanitizer enabled")
-  target_compile_options(${PROJECT_NAME} PRIVATE
+    message(STATUS "MemorySanitizer enabled")
+    target_compile_options(${PROJECT_NAME} PRIVATE
     -fsanitize=memory
     -fsanitize-memory-track-origins=2
     -fno-omit-frame-pointer
     -fno-optimize-sibling-calls
   )
-  target_link_options(${PROJECT_NAME} PRIVATE -fsanitize=memory)
+    target_link_options(${PROJECT_NAME} PRIVATE -fsanitize=memory)
 endif()
 
 if(ENABLE_TSAN)
-  message(STATUS "ThreadSanitizer enabled")
-  target_compile_options(${PROJECT_NAME} PRIVATE
+    message(STATUS "ThreadSanitizer enabled")
+    target_compile_options(${PROJECT_NAME} PRIVATE
     -fsanitize=thread
     -fno-omit-frame-pointer
   )
-  target_link_options(${PROJECT_NAME} PRIVATE -fsanitize=thread)
+    target_link_options(${PROJECT_NAME} PRIVATE -fsanitize=thread)
 endif()
-
-

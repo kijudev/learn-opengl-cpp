@@ -2,4 +2,6 @@ CompileFlags:
   Add:
     - -std=c++23
     - -stdlib=libc++
+  Remove:
+    - -fsanitize=*
   CompilationDatabase: build/debug
