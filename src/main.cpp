@@ -7,6 +7,10 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <print>
 
 #include "shader.hpp"
@@ -141,12 +145,23 @@ int main() {
         glUseProgram(program->get());
 
         float time                   = static_cast<float>(glfwGetTime());
-        float rainbow_color_green    = std::sin(time / 2.0f) / 2.0f + 0.5f;
+        float rainbow_color_green    = std::sin(time) / 2.0f + 0.5f;
         float rainbow_color_red      = std::sin(time / 3.0f) / 2.0f + 0.5f;
         float rainbow_color_blue     = std::sin(time / 4.0f) / 2.0f + 0.5f;
         GLint rainbow_color_location = glGetUniformLocation(program->get(), "rainbowColor");
         glUniform4f(rainbow_color_location, rainbow_color_green, rainbow_color_red,
                     rainbow_color_blue, 1.0f);
+
+        glm::mat4 transform = glm::mat4(1.0f);
+        transform           = glm::translate(
+            transform, glm::vec3(std::sin(time) / 1.5f, std::cos(time) / 1.5f, 0.0f));
+        transform =
+            glm::rotate(transform, glm::radians(time * 30.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        transform = glm::scale(
+            transform, glm::vec3(std::sin(time), std::cos(time * 2), std::sin(time * 3)));
+
+        GLint transform_uniform = glGetUniformLocation(program->get(), "transform");
+        glUniformMatrix4fv(transform_uniform, 1, GL_FALSE, glm::value_ptr(transform));
 
         glBindVertexArray(vao);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
