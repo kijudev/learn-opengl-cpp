@@ -4,11 +4,14 @@
 #include <epoxy/gl_generated.h>
 // clang-format on
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
+#include <glm/fwd.hpp>
+#include <glm/geometric.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -20,12 +23,50 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
 
+struct Camera {
+    glm::vec3 position = glm::vec3(0.0f, 0.0f, 3.0f);
+    glm::vec3 front    = glm::vec3(0.0f, 0.0f, -1.0f);
+    glm::vec3 up       = glm::vec3(0.0f, 1.0f, 0.0f);
+
+    float yaw        = -90.0f;
+    float pitch      = 0.0f;
+    float last_x     = 800.0f / 2.0f;
+    float last_y     = 600.0f / 2.0f;
+    bool first_mouse = true;
+};
+
+Camera camera;
+
 void error_callback(int32_t error, const char* description) {
     std::println(stderr, "GLFW Error ({}): {}", error, description);
 }
 
 void framebuffer_size_callback(GLFWwindow*, int32_t width, int32_t height) {
     glViewport(0, 0, width, height);
+}
+
+void mouse_callback(GLFWwindow*, double xpos_arg, double ypos_arg) {
+    float xpos = static_cast<float>(xpos_arg);
+    float ypos = static_cast<float>(ypos_arg);
+
+    float xoff    = xpos - camera.last_x;
+    float yoff    = -(ypos - camera.last_y);
+    camera.last_x = xpos;
+    camera.last_y = ypos;
+
+    float sensitivity = 0.1f;
+    xoff *= sensitivity;
+    yoff *= sensitivity;
+
+    camera.yaw += xoff;
+    camera.pitch = std::clamp(camera.pitch + yoff, -89.0f, 89.0f);
+
+    glm::vec3 front = glm::vec3(
+        std::cos(glm::radians(camera.yaw)) * std::cos(glm::radians(camera.pitch)),
+        std::sin(glm::radians(camera.pitch)),
+        std::sin(glm::radians(camera.yaw)) * std::cos(glm::radians(camera.pitch)));
+
+    camera.front = glm::normalize(front);
 }
 
 int main() {
@@ -50,6 +91,8 @@ int main() {
 
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetCursorPosCallback(window, mouse_callback);
 
     const char* glVersion = reinterpret_cast<const char*>(glGetString(GL_VERSION));
     std::println("Successfully loaded OpenGL Version: {}",
@@ -164,9 +207,32 @@ int main() {
         glm::vec3(1.5f, 0.2f, -1.5f),   glm::vec3(-1.3f, 1.0f, -1.5f)
     };
 
+    float camera_speed = 0.3f;
+
     while (!glfwWindowShouldClose(window)) {
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
             glfwSetWindowShouldClose(window, true);
+        }
+
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+            camera.position += camera_speed * camera.front;
+        }
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+            camera.position -= camera_speed * camera.front;
+        }
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+            camera.position -=
+                glm::normalize(glm::cross(camera.front, camera.up)) * camera_speed;
+        }
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+            camera.position +=
+                glm::normalize(glm::cross(camera.front, camera.up)) * camera_speed;
+        }
+        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+            camera.position += camera_speed * camera.up;
+        }
+        if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+            camera.position -= camera_speed * camera.up;
         }
 
         glClearColor(0.9f, 0.95f, 0.9f, 1.0f);
@@ -181,14 +247,15 @@ int main() {
         glUniform4f(rainbow_color_location, rainbow_color_green, rainbow_color_red,
                     rainbow_color_blue, 1.0f);
 
-        glm::mat4 view = glm::mat4(1.0f);
-        view           = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+        glm::mat4 view =
+            glm::lookAt(camera.position, camera.position + camera.front, camera.up);
 
         glm::mat4 projection;
         projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
 
         GLint model_uniform = glGetUniformLocation(program->get(), "model");
-        GLint view_uniform  = glGetUniformLocation(program->get(), "view");
+
+        GLint view_uniform = glGetUniformLocation(program->get(), "view");
         glUniformMatrix4fv(view_uniform, 1, GL_FALSE, glm::value_ptr(view));
 
         GLint projection_uniform = glGetUniformLocation(program->get(), "projection");
