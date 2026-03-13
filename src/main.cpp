@@ -207,39 +207,45 @@ int main() {
         glm::vec3(1.5f, 0.2f, -1.5f),   glm::vec3(-1.3f, 1.0f, -1.5f)
     };
 
-    float camera_speed = 0.3f;
+    float camera_speed = 10.0f;
+
+    float last_frame {};
+    float delta_time {};
 
     while (!glfwWindowShouldClose(window)) {
+        float time = static_cast<float>(glfwGetTime());
+        delta_time = time - last_frame;
+        last_frame = time;
+
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
             glfwSetWindowShouldClose(window, true);
         }
 
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-            camera.position += camera_speed * camera.front;
+            camera.position += camera_speed * camera.front * delta_time;
         }
         if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-            camera.position -= camera_speed * camera.front;
+            camera.position -= camera_speed * camera.front * delta_time;
         }
         if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-            camera.position -=
-                glm::normalize(glm::cross(camera.front, camera.up)) * camera_speed;
+            camera.position -= glm::normalize(glm::cross(camera.front, camera.up)) *
+                               camera_speed * delta_time;
         }
         if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-            camera.position +=
-                glm::normalize(glm::cross(camera.front, camera.up)) * camera_speed;
+            camera.position += glm::normalize(glm::cross(camera.front, camera.up)) *
+                               camera_speed * delta_time;
         }
         if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-            camera.position += camera_speed * camera.up;
+            camera.position += camera_speed * camera.up * delta_time;
         }
         if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-            camera.position -= camera_speed * camera.up;
+            camera.position -= camera_speed * camera.up * delta_time;
         }
 
         glClearColor(0.9f, 0.95f, 0.9f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glUseProgram(program->get());
 
-        float time                   = static_cast<float>(glfwGetTime());
         float rainbow_color_green    = std::sin(time) / 2.0f + 0.5f;
         float rainbow_color_red      = std::sin(time / 3.0f) / 2.0f + 0.5f;
         float rainbow_color_blue     = std::sin(time / 4.0f) / 2.0f + 0.5f;
